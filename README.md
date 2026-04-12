@@ -1,6 +1,6 @@
 ### hey, i'm koushik 👋
 
-Business Analyst based in Melbourne, Australia. I build native apps with Swift and SwiftUI — shipping things that actually get used.
+Business Analyst based in Melbourne, Australia. I am building  native apps with Swift and SwiftUI using claudecode. 
 
 🏙️ working on [**MelbPark**](https://github.com/koushik289/MelbPark) — real-time parking availability across Melbourne CBD  
 ⚡ built [**VicAlert**](https://github.com/koushik289/vicalert-ios) — live energy outages + PTV disruption tracker for Victoria  
