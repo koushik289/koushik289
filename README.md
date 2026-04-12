@@ -10,9 +10,6 @@ Business Analyst based in Melbourne, Australia. I build native apps with Swift a
 
 ---
 
-📊 **this week i spent my time on:**
-<!--START_SECTION:waka-->
-<!--END_SECTION:waka-->
 
 ---
 
