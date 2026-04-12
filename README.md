@@ -7,14 +7,3 @@ Business Analyst based in Melbourne, Australia. I am building  native apps with 
 🏀 built [**Sportline**](https://koushik289.github.io/sports-tracker) — live scores and stats for NBA · NFL · MLB  
 📐 obsessed with clean UIs, dark themes, and pixel-precise layouts  
 📬 reach me at koushik.inampudi@gmail.com
-
----
-
-
----
-
-📈 **my github stats**
-
-<p align="center">
-  <img src="https://github-readme-stats.vercel.app/api?username=koushik289&show_icons=true&theme=gotham&hide_border=true&include_all_commits=true&count_private=true" />
-</p>
