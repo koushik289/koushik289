@@ -1,0 +1,10 @@
+[
+  {
+    "id": "BOM-ALERT-1",
+    "title": "Severe Thunderstorm Warning",
+    "description": "Large hail and damaging winds possible in the Sydney area.",
+    "severity": "Severe",
+    "effective": "2025-10-26T00:00:00Z",
+    "expires": "2025-10-26T06:00:00Z"
+  }
+]

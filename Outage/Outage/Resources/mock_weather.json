@@ -1,0 +1,8 @@
+{
+  "locationName": "Sydney NSW",
+  "temperatureCelsius": 22.5,
+  "condition": "Partly Cloudy",
+  "windKph": 18.2,
+  "humidityPercent": 63,
+  "updatedAt": "2025-10-26T00:30:00Z"
+}

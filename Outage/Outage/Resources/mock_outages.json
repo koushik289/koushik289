@@ -1,0 +1,24 @@
+[
+  {
+    "id": "AUSNET-123",
+    "distributor": { "id": "ausnet", "name": "AusNet Services", "state": "VIC" },
+    "status": "live",
+    "startedAt": "2025-10-26T00:15:00Z",
+    "estimatedRestoration": "2025-10-26T03:00:00Z",
+    "cause": "High winds",
+    "affectedCustomers": 2400,
+    "affectedPostcodes": ["3000", "3001", "3002"],
+    "centroid": { "latitude": -37.8136, "longitude": 144.9631 }
+  },
+  {
+    "id": "ESS-451",
+    "distributor": { "id": "essential", "name": "Essential Energy", "state": "NSW" },
+    "status": "planned",
+    "startedAt": "2025-10-28T01:00:00Z",
+    "estimatedRestoration": "2025-10-28T05:00:00Z",
+    "cause": "Network upgrade",
+    "affectedCustomers": 120,
+    "affectedPostcodes": ["2000", "2007"],
+    "centroid": { "latitude": -33.8688, "longitude": 151.2093 }
+  }
+]
