@@ -197,6 +197,33 @@ small { font-size: inherit; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); top: calc(14px + env(safe-area-inset-top, 0px)); z-index: 50; background: var(--ink); color: var(--on-ink); border-radius: 999px; padding: 11px 18px; display: flex; gap: 14px; align-items: center; font-size: 13.5px; font-weight: 500; max-width: calc(100% - 32px); white-space: nowrap; box-shadow: 0 10px 26px rgb(0 0 0 / .25); }
 .toast button { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 
+/* photos */
+.pics { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.pics::-webkit-scrollbar { display: none; }
+.pic { position: relative; flex: none; width: 78px; height: 78px; border-radius: 14px; overflow: hidden; background: var(--sunk); }
+.pic .see, .pic img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pic .rm { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; background: rgb(22 10 28 / .72); color: #fff5ee; display: grid; place-items: center; font-size: 13px; }
+.pic.wait { animation: pulse .9s ease-in-out infinite alternate; }
+@keyframes pulse { from { opacity: .35; } to { opacity: 1; } }
+.addpic { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; background: transparent; outline: 1px dashed var(--muted); outline-offset: -1px; color: var(--muted); font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+.addpic .lucide, .addpic i { width: 22px; height: 22px; }
+.addpic input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
+.hint { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
+.idea.haspic { padding: 0; gap: 0; overflow: hidden; }
+.idea.haspic::before { display: none; }
+.idea.haspic > :not(.cover) { margin: 12px 14px 0; }
+.idea.haspic > :last-child { margin-bottom: 14px; }
+.cover { position: relative; display: block; width: 100%; background: var(--sunk); }
+.cover img { display: block; width: 100%; height: auto; min-height: 90px; max-height: 340px; object-fit: cover; }
+.cover span { position: absolute; right: 8px; bottom: 8px; background: rgb(22 10 28 / .72); color: #fff5ee; font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 999px; }
+.lb { position: fixed; inset: 0; z-index: 60; background: #0b060c; color: #fff5ee; display: flex; align-items: center; justify-content: center; touch-action: pan-y; }
+.lb img { width: 100%; height: 100%; object-fit: contain; }
+.lbtop { position: absolute; z-index: 1; top: calc(10px + env(safe-area-inset-top, 0px)); left: max(14px, env(safe-area-inset-left, 0px)); right: max(14px, env(safe-area-inset-right, 0px)); display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; }
+.lbtop button, .lbnav { width: 44px; height: 44px; border-radius: 50%; background: rgb(22 10 28 / .6); color: #fff5ee; display: grid; place-items: center; font-size: 20px; }
+.lbnav { position: absolute; z-index: 1; top: 50%; transform: translateY(-50%); }
+#lbPrev { left: max(10px, env(safe-area-inset-left, 0px)); } #lbNext { right: max(10px, env(safe-area-inset-right, 0px)); }
+.lb p { position: absolute; z-index: 1; left: 20px; right: 20px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); margin: 0; text-align: center; font-family: var(--display); font-size: 24px; line-height: 1.1; text-shadow: 0 1px 10px #000, 0 0 2px #000; }
+
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 
@@ -235,6 +262,13 @@ small { font-size: inherit; }
 </nav>
 
 <div class="scrim" id="scrim" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Add or edit"></div></div>
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <div class="lbtop"><span id="lbCount"></span><button id="lbClose" aria-label="Close photo viewer"><i data-lucide="x"></i></button></div>
+  <img id="lbImg" alt="">
+  <button class="lbnav" id="lbPrev" aria-label="Previous photo"><i data-lucide="chevron-left"></i></button>
+  <button class="lbnav" id="lbNext" aria-label="Next photo"><i data-lucide="chevron-right"></i></button>
+  <p id="lbCap"></p>
+</div>
 <div id="toast" class="toast" hidden></div>
 
 <script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
@@ -248,7 +282,7 @@ small { font-size: inherit; }
   var CHECK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg>';
 
   var S = { items: [], tab: "day", day: null, filter: "All", showDone: false, loaded: false };
-  var D = null, col = null, queue = {}, toastTimer = null;
+  var D = null, col = null, queue = {}, toastTimer = null, assets = null, urlOf = {}, LB = null;
   var $ = function (id) { return document.getElementById(id); };
   var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -296,7 +330,7 @@ small { font-size: inherit; }
   function remove(it) {
     if (!canSave()) return;
     write(it.id, function () { return col.doc(it.id).delete(); });
-    var copy = { text: it.text, kind: it.kind, done: it.done, due: it.due, cat: it.cat, note: it.note, created: it.created };
+    var copy = { text: it.text, kind: it.kind, done: it.done, due: it.due, cat: it.cat, note: it.note, created: it.created, photos: it.photos.slice() };
     toast("Deleted", "Undo", function () { write(it.id, function () { return col.doc(it.id).set(copy); }); });
   }
   function banner(msg, bad) { var b = $("banner"); b.hidden = !msg; b.textContent = msg || ""; b.className = "banner" + (bad ? " bad" : ""); }
@@ -364,7 +398,7 @@ small { font-size: inherit; }
     el.appendChild(h("button", { class: "main", "aria-label": "Edit: " + it.text, onclick: function () { openEdit(it); } }, [
       h("p", { text: it.text }),
       it.note ? h("div", { class: "note", text: it.note }) : null,
-      h("div", { class: "meta" }, [catTag(it), hideDue ? null : dueTag(it)])
+      h("div", { class: "meta" }, [catTag(it), hideDue ? null : dueTag(it), it.photos.length ? h("span", { class: "tag plain" }, [ic("image"), String(it.photos.length)]) : null])
     ]));
     return el;
   }
@@ -439,27 +473,82 @@ small { font-size: inherit; }
     if (S.tab === "ideas") {
       if (!ideas.length) v.appendChild(empty("lightbulb", "No ideas yet", "Dump anything here: a song, a gift, a question for the planner. Sort it out later.", "Add an idea", function () { openAdd(); }));
       else {
-        var grid = h("div", { class: "ideas" });
+        var grid = h("div", { class: "ideas" }), all = [], at = 0;
+        ideas.forEach(function (it) { it.photos.forEach(function (id) { all.push({ id: id, text: it.text }); }); });
         ideas.forEach(function (it) {
-          var c = cat(it.cat);
-          grid.appendChild(h("div", { class: "idea", c: it.cat && it.cat !== "Other" ? c[1] : "#b98200", role: "button", tabindex: "0", onclick: function () { openEdit(it); },
+          var c = cat(it.cat), start = at, cover = null; at += it.photos.length;
+          if (it.photos.length) {
+            var img = h("img", { src: src(it.photos[0]), alt: "", loading: "lazy" });
+            img.addEventListener("error", function () { img.style.visibility = "hidden"; });
+            cover = h("button", { class: "cover", "aria-label": "View " + plural(it.photos.length, "photo"), onclick: function (e) { e.stopPropagation(); openLB(all, start); } },
+              [img, it.photos.length > 1 ? h("span", { text: "+" + (it.photos.length - 1) }) : null]);
+          }
+          grid.appendChild(h("div", { class: "idea" + (cover ? " haspic" : ""), c: it.cat && it.cat !== "Other" ? c[1] : "#b98200", role: "button", tabindex: "0", onclick: function () { openEdit(it); },
             onkeydown: function (e) { if (e.key === "Enter" && e.target === e.currentTarget) openEdit(it); } }, [
-            h("p", { text: it.text }), it.note ? h("div", { class: "note", text: it.note }) : null,
+            cover, it.text ? h("p", { text: it.text }) : null, it.note ? h("div", { class: "note", text: it.note }) : null,
             h("button", { class: "go", onclick: function (e) { e.stopPropagation(); patch(it.id, { kind: "task", done: false }); toast("Moved to Checklist"); } }, [ic("list-plus"), "Make task"])
           ]));
         });
-        v.appendChild(sec("Ideas", plural(ideas.length, "note"), "", [grid]));
+        v.appendChild(sec("Ideas", plural(ideas.length, "note") + (all.length ? " · " + plural(all.length, "photo") : ""), "", [
+          all.length ? h("button", { class: "link", onclick: function () { openLB(all, 0); } }, [ic("images"), "Show all " + plural(all.length, "photo")]) : null, grid]));
       }
     }
     icons();
   }
 
+  /* ---------- photos ---------- */
+  function okId(x) { return typeof x === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(x); }
+  function src(id) { return urlOf[id] || "/_blob/" + id; }
+  function dropAsset(id) { if (assets) assets.delete(id).catch(function () {}); delete urlOf[id]; }
+  function shrink(file) {
+    return new Promise(function (res) {
+      if (!/^image\/(jpeg|png|webp|heic|heif)$/.test(file.type)) { res(file); return; }
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, hh = img.naturalHeight, k = Math.min(1, 2000 / Math.max(w, hh));
+        if (k === 1 && file.size < 1500000 && !/hei/.test(file.type)) { URL.revokeObjectURL(url); res(file); return; }
+        var c = document.createElement("canvas"); c.width = Math.round(w * k); c.height = Math.round(hh * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        c.toBlob(function (b) { res(b || file); }, "image/jpeg", 0.86);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); res(file); };
+      img.src = url;
+    });
+  }
+  function uploadOne(blob, again) {
+    return assets.upload(blob, { type: blob.type }).catch(function (e) {
+      if (e && e.code === "store_unavailable" && again !== true) return new Promise(function (r) { setTimeout(r, 1200); }).then(function () { return uploadOne(blob, true); });
+      throw e;
+    });
+  }
+  function photoError(e) {
+    var c = e && e.code;
+    return c === "too_large" ? "That photo is too large. Try a smaller one." : c === "unsupported_type" ? "That photo format is not supported. Use JPG or PNG."
+      : c === "quota_or_state" ? "Photo storage is full. Remove some photos first." : c === "rate_limited" ? "Too many uploads at once. Wait a moment, then try again."
+      : "That photo did not upload. Check your connection and try again.";
+  }
+  function openLB(list, at) { if (!list.length) return; LB = { list: list, at: at || 0 }; $("lb").hidden = false; drawLB(); icons(); }
+  function drawLB() {
+    var p = LB.list[LB.at];
+    $("lbImg").src = src(p.id); $("lbImg").alt = p.text || "Reference photo"; $("lbCap").textContent = p.text || "";
+    $("lbCount").textContent = (LB.at + 1) + " / " + LB.list.length; $("lbPrev").hidden = $("lbNext").hidden = LB.list.length < 2;
+  }
+  function stepLB(n) { if (!LB) return; LB.at = (LB.at + n + LB.list.length) % LB.list.length; drawLB(); }
+  function closeLB() { LB = null; $("lb").hidden = true; $("lbImg").removeAttribute("src"); }
+  $("lbClose").addEventListener("click", closeLB);
+  $("lbPrev").addEventListener("click", function () { stepLB(-1); });
+  $("lbNext").addEventListener("click", function () { stepLB(1); });
+  (function () { var x0 = null;
+    $("lb").addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+    $("lb").addEventListener("touchend", function (e) { if (x0 == null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 45) stepLB(dx < 0 ? 1 : -1); }, { passive: true });
+  })();
+
   /* ---------- bottom sheet ---------- */
   function openAdd() {
-    D = { mode: "add", kind: S.tab === "ideas" ? "idea" : "task", text: "", note: "", due: S.tab === "day" ? S.day : "", cat: S.tab === "list" && S.filter !== "All" ? S.filter : "Other" };
+    D = { mode: "add", kind: S.tab === "ideas" ? "idea" : "task", text: "", note: "", due: S.tab === "day" ? S.day : "", cat: S.tab === "list" && S.filter !== "All" ? S.filter : "Other", photos: [], added: [], removed: [] };
     showSheet();
   }
-  function openEdit(it) { D = { mode: "edit", id: it.id, kind: it.kind, text: it.text, note: it.note, due: it.due, cat: cat(it.cat)[0], orig: it }; showSheet(); }
+  function openEdit(it) { D = { mode: "edit", id: it.id, kind: it.kind, text: it.text, note: it.note, due: it.due, cat: cat(it.cat)[0], orig: it, photos: it.photos.slice(), added: [], removed: [] }; showSheet(); }
 
   function showSheet() {
     var sheet = $("sheet"), scrim = $("scrim"); sheet.textContent = "";
@@ -513,6 +602,41 @@ small { font-size: inherit; }
     sheet.appendChild(whenBox);
     sheet.appendChild(h("div", {}, [h("p", { class: "lbl", text: "Tag" }), tags]));
 
+    var pics = h("div", { class: "pics" }), busy = 0, mine = D;
+    function drawPics() {
+      pics.textContent = "";
+      D.photos.forEach(function (id, n) {
+        pics.appendChild(h("div", { class: "pic" }, [
+          h("button", { class: "see", "aria-label": "View photo " + (n + 1), onclick: function () { openLB(D.photos.map(function (x) { return { id: x, text: D.text }; }), n); } }, [h("img", { src: src(id), alt: "" })]),
+          h("button", { class: "rm", "aria-label": "Remove photo " + (n + 1), onclick: function () {
+            D.photos.splice(n, 1); var a = D.added.indexOf(id);
+            if (a < 0) D.removed.push(id); else { D.added.splice(a, 1); dropAsset(id); }
+            drawPics(); icons();
+          } }, [ic("x")])
+        ]));
+      });
+      for (var k = 0; k < busy; k++) pics.appendChild(h("div", { class: "pic wait", role: "img", "aria-label": "Uploading photo" }));
+      if (assets) {
+        var input = h("input", { type: "file", accept: "image/*", multiple: "", "aria-label": "Add photos" });
+        input.addEventListener("change", function () { addFiles(input.files); input.value = ""; });
+        pics.appendChild(h("label", { class: "pic addpic" }, [ic("image-plus"), h("span", { text: "Add" }), input]));
+      }
+    }
+    function addFiles(files) {
+      Array.prototype.slice.call(files, 0, 12).reduce(function (chain, f) {
+        busy++;
+        return chain.then(function () { return shrink(f); }).then(uploadOne).then(function (r) {
+          urlOf[r.id] = r.url; busy--;
+          if (D !== mine) { dropAsset(r.id); return; }
+          D.photos.push(r.id); D.added.push(r.id); drawPics(); icons();
+        }, function (e) { busy--; toast(photoError(e)); if (D === mine) { drawPics(); icons(); } });
+      }, Promise.resolve());
+      drawPics(); icons();
+    }
+    D.redraw = function () { drawPics(); icons(); };
+    sheet.appendChild(h("div", {}, [h("p", { class: "lbl", text: "Photos" }), pics, assets ? null : h("p", { class: "hint", text: "Photos can't be added in this view." })]));
+    drawPics();
+
     if (D.mode === "edit") {
       var note = h("textarea", { class: "notes", id: "shNote", rows: "2", placeholder: "Notes: phone numbers, sizes, prices, links…", "aria-label": "Notes" }); note.value = D.note;
       note.addEventListener("input", function () { D.note = note.value; });
@@ -536,18 +660,26 @@ small { font-size: inherit; }
 
   function submitAdd() {
     var text = $("shText"), t = (D.text || "").trim();
-    if (!t) { text.focus(); return; }
-    create({ text: t, kind: D.kind, done: false, due: D.kind === "task" ? D.due : "", cat: D.cat, note: "", created: Date.now() });
+    if (!t && !D.photos.length) { text.focus(); return; }
+    create({ text: t, kind: D.kind, done: false, due: D.kind === "task" ? D.due : "", cat: D.cat, note: "", created: Date.now(), photos: D.photos.slice() });
+    D.photos = []; D.added = []; D.redraw();
     D.text = ""; text.value = ""; text.style.height = "56px"; text.focus();
     toast(D.kind === "task" ? "Added" + (D.due ? " for " + nice(D.due) : " to Checklist") : "Saved to Ideas");
   }
   function closeSheet(save) {
-    if (save && D && D.mode === "edit") {
-      var o = D.orig, t = (D.text || "").trim() || o.text, n = (D.note || "").trim(), due = D.kind === "task" ? D.due : o.due;
-      if (t !== o.text || n !== o.note || due !== o.due || D.cat !== cat(o.cat)[0] || D.kind !== o.kind) {
-        var data = { text: t, note: n, due: due, cat: D.cat, kind: D.kind }; if (D.kind !== o.kind) data.done = false;
-        patch(o.id, data);
+    if (D) {
+      var keep = {};
+      if (save && D.mode === "edit") {
+        var o = D.orig, t = (D.text || "").trim(), n = (D.note || "").trim(), due = D.kind === "task" ? D.due : o.due;
+        if (!t && !D.photos.length) t = o.text;
+        if (t !== o.text || n !== o.note || due !== o.due || D.cat !== cat(o.cat)[0] || D.kind !== o.kind || D.photos.join() !== o.photos.join()) {
+          var data = { text: t, note: n, due: due, cat: D.cat, kind: D.kind, photos: D.photos.slice() }; if (D.kind !== o.kind) data.done = false;
+          patch(o.id, data);
+        }
+        D.photos.forEach(function (id) { keep[id] = 1; });
+        if (col) D.removed.forEach(dropAsset);
       }
+      D.added.forEach(function (id) { if (!keep[id]) dropAsset(id); });
     }
     D = null; var scrim = $("scrim"); scrim.classList.remove("open"); document.body.style.overflow = "";
     setTimeout(function () { if (!D) scrim.hidden = true; }, calm ? 0 : 240);
@@ -558,7 +690,10 @@ small { font-size: inherit; }
   }
   if (window.visualViewport) { visualViewport.addEventListener("resize", fitSheet); visualViewport.addEventListener("scroll", fitSheet); }
   $("scrim").addEventListener("click", function (e) { if (e.target === $("scrim")) closeSheet(D && D.mode === "edit"); });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && D) closeSheet(false); });
+  document.addEventListener("keydown", function (e) {
+    if (LB) { if (e.key === "Escape") closeLB(); else if (e.key === "ArrowLeft") stepLB(-1); else if (e.key === "ArrowRight") stepLB(1); return; }
+    if (e.key === "Escape" && D) closeSheet(false);
+  });
   $("fab").addEventListener("click", openAdd);
   $("ticket").addEventListener("click", function () { S.day = FLIGHT; S.tab = "day"; render(); });
 
@@ -575,6 +710,7 @@ small { font-size: inherit; }
   function offline() { S.loaded = true; render(); banner("Saving is not available in this view. Open the page in Claude while signed in.", true); }
   var use = window.claude && window.claude.use;
   if (!use) { offline(); return; }
+  window.claude.use("assets").then(function (a) { assets = a || null; });
   window.claude.use("db").then(function (db) {
     if (!db) { offline(); return; }
     col = db.collection("items");
@@ -582,7 +718,7 @@ small { font-size: inherit; }
     col.onSnapshot(function (snap) {
       S.items = snap.docs.map(function (doc) {
         var x = doc.data() || {};
-        return { id: doc.id, text: String(x.text || ""), kind: x.kind === "idea" ? "idea" : "task", done: !!x.done, due: typeof x.due === "string" ? x.due : "", cat: String(x.cat || "Other"), note: String(x.note || ""), created: +x.created || 0 };
+        return { id: doc.id, text: String(x.text || ""), kind: x.kind === "idea" ? "idea" : "task", done: !!x.done, due: typeof x.due === "string" ? x.due : "", cat: String(x.cat || "Other"), note: String(x.note || ""), created: +x.created || 0, photos: Array.isArray(x.photos) ? x.photos.filter(okId).slice(0, 40) : [] };
       });
       S.loaded = true;
       if (!snap.metadata.fromCache) { clearTimeout(slow); if (!$("banner").classList.contains("bad")) banner(""); }
